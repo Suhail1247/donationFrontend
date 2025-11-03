@@ -1,11 +1,23 @@
+import React from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-export default function ProtectedRoute({ children, adminOnly }) {
-  const { user } = useAuth();
+const ProtectedRoute = ({ children, adminOnly }) => {
+  const { user, loading } = useAuth();
 
-  if (!user) return <Navigate to="/login" />;
-  if (adminOnly && user.role !== "superAdmin") return <Navigate to="/" />;
+  if (loading) {
+    return <div className="text-center mt-10 text-gray-600">Checking session...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (adminOnly && user.role !== "superAdmin") {
+    return <Navigate to="/" replace />;
+  }
 
   return children;
-}
+};
+
+export default ProtectedRoute;

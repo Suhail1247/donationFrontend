@@ -1,52 +1,47 @@
-import { createContext, useState, useEffect, useContext } from "react";
+import React, { createContext, useState, useEffect, useContext } from "react";
 import { loginUser, registerUser } from "../Api/connect";
+
 const AuthContext = createContext();
+
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem("user");
-    if (stored) setUser(JSON.parse(stored));
+    const loadUser = async () => {
+      try {
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        }
+      } catch (err) {
+        console.error("Failed to load user from localStorage", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUser();
   }, []);
 
   const login = async (formData) => {
-    try {
-      
-      const response = await loginUser(formData);
-console.log('here',response);
-
-      if (response.status && response.user) {
-        // Store user in state only
-        setUser({
-          ...response.user,
-          token: response.token,
-          monthlyDonations: [],
-        });
-        localStorage.setItem("user", JSON.stringify(response.user));
-        localStorage.setItem("token", response.token);
-      
-        return response
-      } else {
-        throw new Error(response.data.message || "Login failed");
-      }
-    } catch (error) {
-      console.error("Login failed:", error);
-      throw error;
+    const response = await loginUser(formData);
+    if (response.status && response.user) {
+      const fullUser = { ...response.user, token: response.token };
+      setUser(fullUser);
+      localStorage.setItem("user", JSON.stringify(fullUser));
+      localStorage.setItem("token", response.token);
+      return response;
+    } else {
+      throw new Error(response.message || "Login failed");
     }
   };
 
-
   const register = async (formData) => {
-    try {
-      const respose = await registerUser(formData);
-
-      return respose; // let Register page decide what to do next
-    } catch (error) {
-      console.error("Registration failed:", error);
-      throw error;
-    }
+    const response = await registerUser(formData);
+    return response;
   };
 
   const logout = () => {
@@ -56,7 +51,7 @@ console.log('here',response);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, register }}>
+    <AuthContext.Provider value={{ user, login, logout, register, loading }}>
       {children}
     </AuthContext.Provider>
   );

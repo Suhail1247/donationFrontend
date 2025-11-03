@@ -21,11 +21,13 @@ export default function UserDetails() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Fetch user details
   useEffect(() => {
     const getUser = async () => {
       try {
         const data = await fetchUserById(id);
-        setUser(data);
+        // Axios returns data in res.data, adjust if backend wraps user
+        setUser(data.user || data);
       } catch (error) {
         console.error("Error fetching user:", error);
       } finally {
@@ -35,12 +37,14 @@ export default function UserDetails() {
     getUser();
   }, [id]);
 
+  // Handle offline payment
   const handleOfflinePayment = async () => {
     try {
-      await markOfflinePayment(id); // backend should update payment status
+      await markOfflinePayment(id);
       alert("Payment marked as paid (offline).");
+
       const updated = await fetchUserById(id);
-      setUser(updated);
+      setUser(updated.user || updated);
     } catch (error) {
       console.error("Failed to mark payment:", error);
     }
@@ -101,12 +105,11 @@ export default function UserDetails() {
                     <TableRow key={i}>
                       <TableCell>{d.month}</TableCell>
                       <TableCell>
-                        ₹{d.donations?.[0]?.amount || "—"}
+                        ₹{d.donations?.reduce((sum, item) => sum + item.amount, 0) || "—"}
                       </TableCell>
                       <TableCell
                         sx={{
-                          color:
-                            d.donations?.length > 0 ? "green" : "red",
+                          color: d.donations?.length > 0 ? "green" : "red",
                           fontWeight: "bold",
                         }}
                       >
